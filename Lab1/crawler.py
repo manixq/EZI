@@ -5,6 +5,7 @@
 import urllib.request as req
 import sys
 import os
+import numpy
 from html.parser import HTMLParser
 
 
@@ -88,6 +89,27 @@ class LIFO_Cycle_Policy:
                     return temp
             return temp
 
+class LIFO_Authority_Policy:
+    def __init__(self):
+        self.fetched = set([])
+
+    def getURL(self, c, iteration):
+        if len(c.queue) == 0:
+            self.fetched.clear()
+            c.queue = list(c.seedURLs)
+
+        AutohorityLevels = []
+        AutohorityLevelsSum = 0
+
+        for url in c.queue:
+            AutohorityLevelsSum += (len(c.incomingURLs) + 1)
+        for url in c.queue:
+            AutohorityLevels.append((len(c.incomingURLs) + 1) / AutohorityLevelsSum)
+
+        temp = numpy.random.choice(c.queue, p = AutohorityLevels)
+        c.queue.remove(temp)
+        return temp
+
     def updateURLs(self, c, newURLs, newURLsWD, iteration):
         tmpList = list(newURLs)
         tmpList.sort(key=lambda url: url[len(url) - url[::-1].index('/'):])
@@ -101,7 +123,7 @@ class Container:
         # The name of the crawler"
         self.crawlerName = "IRbot"
         # Example ID
-        self.example = "exercise2"
+        self.example = "exercise3"
         # Root (host) page
         self.rootPage = "http://www.cs.put.poznan.pl/alabijak/ezi/lab1/" + self.example
         # Initial links to visit
@@ -115,11 +137,11 @@ class Container:
         # Incoming URLs (to <- from; set of incoming links)
         self.incomingURLs = {}
         # Class which maintains a queue of urls to visit. 
-        self.generatePolicy = LIFO_Cycle_Policy()
+        self.generatePolicy = LIFO_Authority_Policy()
         # Page (URL) to be fetched next
         self.toFetch = None
         # Number of iterations of a crawler. 
-        self.iterations = 10
+        self.iterations = 50
 
         # If true: store all crawled html pages in the provided directory.
         self.storePages = True
@@ -136,7 +158,7 @@ class Container:
         self.storedIncomingURLs = "/" + self.example + "/incoming/"
 
         # If True: debug
-        self.debug = True
+        self.debug = False
 
 
 class Parser(HTMLParser):
